@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8" />
+
+<link href="/css/reset.css" th:href="@{/css/reset.css}" rel="stylesheet" />
+<link href="/css/style.css" th:href="@{/css/style.css}" rel="stylesheet" />
+	
+<title>birthstone-kabuki</title>
+</head>
+<body>
+
+<header th:insert="fragments/page_header::pageHeader"></header>
+
+<main>
+	<div class="container cart">
+		<div th:if = "${destinationList == null || destinationList.size() == 0}">
+			<p class="info">宛先情報がありません。新規登録してください。</p>
+		</div>
+		<div th:if = "${destinationList != null && destinationList.size() != 0}">
+			<h2>宛先を選択し、決済を完了します。</h2>
+			<p class="info">宛先の新規登録、削除も可能です。</p>
+		</div>
+		<table class="destination" th:if="${destinationList != null && destinationList.size() > 0}">
+				<tr>
+					<th>選択</th><th>宛先氏名</th><th>住所</th><th>電話番号</th>
+				</tr>
+				<tr th:each = "destination, stat: ${destinationList}">
+					<td><input type="radio" class = "radio" name = "destinationId" th:value = "${destination.id}" th:checked="${stat.index == 0}" /></td>
+					<td>
+						<span th:text="${destination.familyName}"></span><span>　</span><span th:text="${destination.firstName}"></span>
+					</td>
+					<td th:text = "${destination.address}" />
+					<td th:text = "${destination.telNumber}" />
+				</tr>
+		</table>
+		<div class="buttonArea">
+			<button id="deleteBtn" th:if="${destinationList != null && destinationList.size() > 0}">削除</button>
+			<button type ="button" onclick="location.href='/kabuki/destination/'">新規宛先</button>
+			<button type ="submit" th:if = "${destinationList != null && destinationList.size() != 0}" id = "settlementBtn">決済</button>
+		</div>	
+	</div>
+</main>
+
+<script>
+$(() => {
+	$('#settlementBtn').on('click', () => {
+		let destinationId = $('.radio:checked').val();
+		settlement(destinationId);
+	});
+	
+	$('#deleteBtn').on('click', () => {
+		let checked = $('.radio:checked');
+		let destinationId = $(checked).val();
+		deleteDestination(destinationId, checked);
+	});	
+});
+
+/**
+ * 宛先情報を削除する。
+ * @param destinationId 宛先情報ID、checked 選択されたラジオボタンのオブジェクト
+ * @returns なし
+ */
+function deleteDestination(destinationId, checked) {
+	$.ajax({
+		type: 'POST',
+		url: '/kabuki/destination/delete',
+		data: JSON.stringify({'destinationId': destinationId}),
+		contentType: 'application/json',
+	})
+	.then((result) => {
+		$(checked).parent().parent().remove();
+		let radioList = $('.radio');
+		if (radioList.length == 0) {
+			location.replace('/kabuki/settlement/');
+		}
+		radioList[0].checked = true;
+	}, () => {
+		alert('Error: ajax connection failed.');
+	});
+}
+</script>
+
+</body>
+</html>
